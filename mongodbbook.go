@@ -42,6 +42,7 @@ type Unicorn struct {
 	Weight   int
 	Gender   string
 	Vampires int
+	Vaccinated bool
 }
 
 func insertUnicorns(s *mgo.Session) (*mgo.Collection, error) {
@@ -157,14 +158,25 @@ func ch02(c *mgo.Collection) error {
 
 	//
 	fmt.Println("全てのかわいいユニコーン達が予防接種を受けた")
-	if err := c.UpdateAll(struct{}{}, bson.M{"$set": bson.M{"vaccinated": true}}); err != nil {
-		return err
-	}
-	if err = c.Find(struct{}{}).All(&unicorns); err != nil {
+
+	fmt.Println("before")
+	var unicorns []Unicorn
+	if err := c.Find(struct{}{}).All(&unicorns); err != nil {
 		return err
 	}
 	for _, u := range unicorns {
-		fmt.Printf("%v\n", u)
+		fmt.Printf("%s\tvaccinated:%t\n", u.Name, u.Vaccinated)
+	}
+
+	if _, err := c.UpdateAll(struct{}{}, bson.M{"$set": bson.M{"vaccinated": true}}); err != nil {
+		return err
+	}
+	fmt.Println("after")
+	if err := c.Find(struct{}{}).All(&unicorns); err != nil {
+		return err
+	}
+	for _, u := range unicorns {
+		fmt.Printf("%s\tvaccinated:%t\n", u.Name, u.Vaccinated)
 	}
 
 	return nil
