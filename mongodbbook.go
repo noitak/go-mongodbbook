@@ -25,6 +25,9 @@ func main() {
 	if err = ch02(collection); err != nil {
 		panic(err)
 	}
+	if err = ch02Hits(session); err != nil {
+		panic(err)
+	}
 	// Cleanup Unicorn collection
 	if err = cleanupUnicorns(collection); err != nil {
 		panic(err)
@@ -151,6 +154,37 @@ func ch02(c *mgo.Collection) error {
 	if err := printUnicorn(c, "Aurora"); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+type Hits struct {
+	ID       bson.ObjectId `bson:"_id,omitempty"`
+	Page string
+	Hits int
+}
+
+func ch02Hits(s *mgo.Session) error {
+	// 
+	fmt.Println("Webサイトのカウンター")
+	c := s.DB("test").C("hits")
+	// 1
+	if _, err := c.Upsert(bson.M{"page": "unicorns"}, bson.M{"$inc": bson.M{"hits": 1}}); err != nil {
+		return err
+	}
+	var h Hits
+	if err := c.Find(bson.M{"page": "unicorns"}).One(&h); err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", h)
+	// 2
+	if _, err := c.Upsert(bson.M{"page": "unicorns"}, bson.M{"$inc": bson.M{"hits": 1}}); err != nil {
+		return err
+	}
+	if err := c.Find(bson.M{"page": "unicorns"}).One(&h); err != nil {
+		return err
+	}
+	fmt.Printf("%v\n", h)
 
 	return nil
 }
