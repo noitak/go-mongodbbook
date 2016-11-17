@@ -53,24 +53,28 @@ func main() {
 	}
 	defer session.Close()
 
+	// Create Unicorn
+	collection, err := insertUnicorns(session)
+	if err != nil {
+		panic(err)
+	}
 	// ch01
-	if err = ch01(session); err != nil {
+	if err = ch01(collection); err != nil {
+		panic(err)
+	}
+	// Cleanup Unicorn
+	if err = cleanupUnicorns(collection); err != nil {
 		panic(err)
 	}
 }
 
-func ch01(s *mgo.Session) error {
+func ch01(c *mgo.Collection) error {
 	fmt.Println("Ch01")
-
-	c, err := insertUnicorns(s)
-	if err != nil {
-		return err
-	}
 
 	//
 	fmt.Println("性別が男で体重が700ポンドより大きいユニコーンを探す")
 	var unicorns []Unicorn
-	err = c.Find(
+	err := c.Find(
 		bson.M{"gender": "m",
 			"weight": bson.M{"$gt": 700}}).All(&unicorns)
 	if err != nil {
@@ -95,10 +99,6 @@ func ch01(s *mgo.Session) error {
 	}
 	for _, u := range unicorns {
 		fmt.Printf("%v\n", u)
-	}
-	// Cleanup
-	if err = cleanupUnicorns(c); err != nil {
-		panic(err)
 	}
 	return nil
 }
