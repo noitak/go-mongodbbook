@@ -7,6 +7,30 @@ import (
 	"time"
 )
 
+func main() {
+	session, err := mgo.Dial("localhost")
+	if err != nil {
+		panic(err)
+	}
+	defer session.Close()
+
+	// Create Unicorn collection
+	collection, err := insertUnicorns(session)
+	if err != nil {
+		panic(err)
+	}
+	if err = ch01(collection); err != nil {
+		panic(err)
+	}
+	if err = ch02(collection); err != nil {
+		panic(err)
+	}
+	// Cleanup Unicorn collection
+	if err = cleanupUnicorns(collection); err != nil {
+		panic(err)
+	}
+}
+
 type Unicorn struct {
 	ID       bson.ObjectId `bson:"_id,omitempty"`
 	Name     string
@@ -46,28 +70,6 @@ func cleanupUnicorns(c *mgo.Collection) error {
 	return nil
 }
 
-func main() {
-	session, err := mgo.Dial("localhost")
-	if err != nil {
-		panic(err)
-	}
-	defer session.Close()
-
-	// Create Unicorn
-	collection, err := insertUnicorns(session)
-	if err != nil {
-		panic(err)
-	}
-	// ch01
-	if err = ch01(collection); err != nil {
-		panic(err)
-	}
-	// Cleanup Unicorn
-	if err = cleanupUnicorns(collection); err != nil {
-		panic(err)
-	}
-}
-
 func ch01(c *mgo.Collection) error {
 	fmt.Println("Ch01")
 
@@ -103,3 +105,63 @@ func ch01(c *mgo.Collection) error {
 	return nil
 }
 
+func ch02(c *mgo.Collection) error {
+	fmt.Println("Ch02")
+
+	//
+	fmt.Println("Roooooodles の体重を少し増やしたい")
+	// before
+	if err := printUnicorn(c, "Roooooodles"); err != nil {
+		return err
+	}
+	if err := c.Update(bson.M{"name": "Roooooodles"}, bson.M{"$set": bson.M{"weight": 590}}); err != nil {
+		fmt.Println("Fail to update Roooooodles")
+		return err
+	}
+	// after
+	if err := printUnicorn(c, "Roooooodles"); err != nil {
+		return err
+	}
+
+	//
+	fmt.Println("もしPilotがvampireを倒した数が間違っていて2つ多かった場合、以下のようにして間違いを修正します")
+	// before
+	if err := printUnicorn(c, "Pilot"); err != nil {
+		return err
+	}
+	if err := c.Update(bson.M{"name": "Pilot"}, bson.M{"$inc": bson.M{"vampires": -2}}); err != nil {
+		fmt.Println("Fail to update Pilot")
+		return err
+	}
+	// after
+	if err := printUnicorn(c, "Pilot"); err != nil {
+		return err
+	}
+
+	//
+	fmt.Println("もし Aurora が突然甘党になったら")
+	// before
+	if err := printUnicorn(c, "Aurora"); err != nil {
+		return err
+	}
+	if err := c.Update(bson.M{"name": "Aurora"}, bson.M{"$push": bson.M{"loves": "sugar"}}); err != nil {
+		return err
+	}		
+	// after
+	if err := printUnicorn(c, "Aurora"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func printUnicorn(c *mgo.Collection, name string) error {
+	var u Unicorn
+	err := c.Find(bson.M{"name": name}).One(&u)
+	if err != nil {
+		fmt.Println("Fail to find: ", name)
+		return err
+	}
+	fmt.Printf("%v\n", u)
+	return nil
+}
