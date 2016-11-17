@@ -5,6 +5,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
+	"errors"
 )
 
 func main() {
@@ -19,17 +20,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	if err = ch01(collection); err != nil {
+	if err := ch01(collection); err != nil {
 		panic(err)
 	}
-	if err = ch02(collection); err != nil {
+	if err := ch02(collection); err != nil {
 		panic(err)
 	}
-	if err = ch02Hits(session); err != nil {
+	if err := ch02Hits(session); err != nil {
 		panic(err)
 	}
-	// Cleanup Unicorn collection
-	if err = cleanupUnicorns(collection); err != nil {
+	// Cleanup
+	if err := cleanupCollection(session, "unicorn"); err != nil {
+		panic(err)
+	}
+	if err := cleanupCollection(session, "hits"); err != nil {
 		panic(err)
 	}
 }
@@ -66,7 +70,11 @@ func insertUnicorns(s *mgo.Session) (*mgo.Collection, error) {
 	return c, nil
 }
 
-func cleanupUnicorns(c *mgo.Collection) error {
+func cleanupCollection(s *mgo.Session, collectionName string) error {
+	c := s.DB("test").C(collectionName)
+	if c == nil {
+		return errors.New("can't create collection: " + collectionName)
+	}
 	_, err := c.RemoveAll(struct{}{})
 	if err != nil {
 		return err
