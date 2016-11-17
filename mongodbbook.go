@@ -155,6 +155,18 @@ func ch02(c *mgo.Collection) error {
 		return err
 	}
 
+	//
+	fmt.Println("全てのかわいいユニコーン達が予防接種を受けた")
+	if err := c.UpdateAll(struct{}{}, bson.M{"$set": bson.M{"vaccinated": true}}); err != nil {
+		return err
+	}
+	if err = c.Find(struct{}{}).All(&unicorns); err != nil {
+		return err
+	}
+	for _, u := range unicorns {
+		fmt.Printf("%v\n", u)
+	}
+
 	return nil
 }
 
