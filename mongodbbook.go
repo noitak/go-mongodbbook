@@ -16,17 +16,20 @@ func main() {
 	defer session.Close()
 
 	// Create Unicorn collection
-	collection, err := insertUnicorns(session)
+	unicorn, err := insertUnicorns(session)
 	if err != nil {
 		panic(err)
 	}
-	if err := ch01(collection); err != nil {
+	if err := ch01(unicorn); err != nil {
 		panic(err)
 	}
-	if err := ch02(collection); err != nil {
+	if err := ch02(unicorn); err != nil {
 		panic(err)
 	}
 	if err := ch02Hits(session); err != nil {
+		panic(err)
+	}
+	if err := ch03(unicorn); err != nil {
 		panic(err)
 	}
 	// Cleanup
@@ -114,13 +117,13 @@ func ch01(c *mgo.Collection) error {
 
 	//
 	fmt.Println("$exists演算子はフィールドの存在や欠如のマッチに利用します")
-	var unicornsWithoutVampires []UnicornWithoutVampires
+	var unicornsWithoutVampires []Unicorn
 	err = c.Find(bson.M{"vampires": bson.M{"$exists": false}}).All(&unicornsWithoutVampires)
 	if err != nil {
 		return err
 	}
 	for _, u := range unicornsWithoutVampires {
-		fmt.Printf("%v\n", u)
+		fmt.Printf("%v: %d\n", u, u.Vampires)
 	}
 
 	//
@@ -240,6 +243,51 @@ func ch02Hits(s *mgo.Session) error {
 		return err
 	}
 	fmt.Printf("%v\n", h)
+
+	return nil
+}
+
+func ch03(c *mgo.Collection) error {
+	fmt.Println("Ch03")
+
+	//
+
+	//
+	fmt.Println("全てのユニコーンの名前を取得")
+	var names []Unicorn
+	c.Find(nil).Select(bson.M{"name": 1}).All(&names)
+	for _, n := range names {
+		fmt.Printf("%v\n", n)
+	}
+
+	//
+	fmt.Println("昇順でソートを行いたい場合はフィールドと1を指")
+	var us []Unicorn
+	c.Find(struct{}{}).Sort("name").All(&us)
+	for _, u := range us {
+		fmt.Printf("%v\n", u.Name)
+	}
+
+	fmt.Println("降順で行いたい場合は–1を指定します")
+	c.Find(struct{}{}).Sort("-name").All(&us)
+	for _, u := range us {
+		fmt.Printf("%v\n", u.Name)
+	}
+
+	//
+	fmt.Println("ページング:2番目と3番目に重いユニコーンを得る")
+	c.Find(nil).Sort("-weight").Limit(2).Skip(1).All(&us)
+	for _, u := range us {
+		fmt.Printf("%s(weight: %d)\n", u.Name, u.Weight)
+	}
+
+	//
+	fmt.Println("カウント")
+	n, err := c.Find(bson.M{"vampires": bson.M{"$gt": 50}}).Count()
+	if err != nil {
+		return err
+	}
+	fmt.Println(n)
 
 	return nil
 }
