@@ -1,11 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
-	"errors"
 )
 
 func main() {
@@ -39,13 +39,24 @@ func main() {
 }
 
 type Unicorn struct {
-	ID       bson.ObjectId `bson:"_id,omitempty"`
-	Name     string
-	Dob      time.Time
-	Loves    []string
-	Weight   int
-	Gender   string
-	Vampires int
+	ID         bson.ObjectId `bson:"_id,omitempty"`
+	Name       string
+	Dob        time.Time
+	Loves      []string
+	Weight     int
+	Gender     string
+	Vampires   int
+	Vaccinated bool
+}
+
+type UnicornWithoutVampires struct {
+	ID     bson.ObjectId `bson:"_id,omitempty"`
+	Name   string
+	Dob    time.Time
+	Loves  []string
+	Weight int
+	Gender string
+	//	Vampires int // comment out
 	Vaccinated bool
 }
 
@@ -62,9 +73,12 @@ func insertUnicorns(s *mgo.Session) (*mgo.Collection, error) {
 		&Unicorn{Name: "Raleigh", Dob: time.Date(205, 4, 3, 0, 570, 0, 0, time.Local), Loves: []string{"apple", "sugar"}, Weight: 421, Gender: "m", Vampires: 2},
 		&Unicorn{Name: "Leia", Dob: time.Date(201, 9, 8, 14, 530, 0, 0, time.Local), Loves: []string{"apple", "watermelon"}, Weight: 601, Gender: "f", Vampires: 33},
 		&Unicorn{Name: "Pilot", Dob: time.Date(1997, 2, 1, 5, 30, 0, 0, time.Local), Loves: []string{"apple", "watermelon"}, Weight: 650, Gender: "m", Vampires: 54},
-		&Unicorn{Name: "Nimue", Dob: time.Date(1999, 11, 20, 16, 150, 0, 0, time.Local), Loves: []string{"grape", "carrot"}, Weight: 540, Gender: "f"},
+		//		&Unicorn{Name: "Nimue", Dob: time.Date(1999, 11, 20, 16, 150, 0, 0, time.Local), Loves: []string{"grape", "carrot"}, Weight: 540, Gender: "f"},
 		&Unicorn{Name: "Dunx", Dob: time.Date(1976, 6, 18, 18, 180, 0, 0, time.Local), Loves: []string{"grape", "watermelon"}, Weight: 704, Gender: "m", Vampires: 165})
 	if err != nil {
+		return nil, err
+	}
+	if err := c.Insert(&UnicornWithoutVampires{Name: "Nimue", Dob: time.Date(1999, 11, 20, 16, 150, 0, 0, time.Local), Loves: []string{"grape", "carrot"}, Weight: 540, Gender: "f"}); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -98,7 +112,16 @@ func ch01(c *mgo.Collection) error {
 		fmt.Printf("%v\n", u)
 	}
 
-	// TODO: $exists ...type 定義が必要. Name: "Nimue" は Vampires なし
+	//
+	fmt.Println("$exists演算子はフィールドの存在や欠如のマッチに利用します")
+	var unicornsWithoutVampires []UnicornWithoutVampires
+	err = c.Find(bson.M{"vampires": bson.M{"$exists": false}}).All(&unicornsWithoutVampires)
+	if err != nil {
+		return err
+	}
+	for _, u := range unicornsWithoutVampires {
+		fmt.Printf("%v\n", u)
+	}
 
 	//
 	fmt.Println("全ての女性のユニコーンの中から、りんごかオレンジが好き、もしくは体重が 500ポンド未満の条件で検索します")
@@ -158,7 +181,7 @@ func ch02(c *mgo.Collection) error {
 	}
 	if err := c.Update(bson.M{"name": "Aurora"}, bson.M{"$push": bson.M{"loves": "sugar"}}); err != nil {
 		return err
-	}		
+	}
 	// after
 	if err := printUnicorn(c, "Aurora"); err != nil {
 		return err
@@ -191,13 +214,13 @@ func ch02(c *mgo.Collection) error {
 }
 
 type Hits struct {
-	ID       bson.ObjectId `bson:"_id,omitempty"`
+	ID   bson.ObjectId `bson:"_id,omitempty"`
 	Page string
 	Hits int
 }
 
 func ch02Hits(s *mgo.Session) error {
-	// 
+	//
 	fmt.Println("Webサイトのカウンター")
 	c := s.DB("test").C("hits")
 	// 1
