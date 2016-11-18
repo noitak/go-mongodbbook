@@ -35,6 +35,9 @@ func main() {
 	if err := ch04(session); err != nil {
 		panic(err)
 	}
+	if err := ch05(session); err != nil {
+		panic(err)
+	}
 	// Cleanup
 	if err := cleanupCollection(session, "unicorn"); err != nil {
 		panic(err)
@@ -106,10 +109,10 @@ func cleanupCollection(s *mgo.Session, collectionName string) error {
 }
 
 func ch01(c *mgo.Collection) error {
-	fmt.Println("Ch01")
+	fmt.Println("Ch01 ------------------------------------------------------------")
 
 	//
-	fmt.Println("性別が男で体重が700ポンドより大きいユニコーンを探す")
+	fmt.Printf("性別が男で体重が700ポンドより大きいユニコーンを探す\n")
 	var unicorns []Unicorn
 	err := c.Find(
 		bson.M{"gender": "m",
@@ -122,7 +125,7 @@ func ch01(c *mgo.Collection) error {
 	}
 
 	//
-	fmt.Println("$exists演算子はフィールドの存在や欠如のマッチに利用します")
+	fmt.Print("\n$exists演算子はフィールドの存在や欠如のマッチに利用します\n")
 	var unicornsWithoutVampires []Unicorn
 	err = c.Find(bson.M{"vampires": bson.M{"$exists": false}}).All(&unicornsWithoutVampires)
 	if err != nil {
@@ -133,7 +136,7 @@ func ch01(c *mgo.Collection) error {
 	}
 
 	//
-	fmt.Println("全ての女性のユニコーンの中から、りんごかオレンジが好き、もしくは体重が 500ポンド未満の条件で検索します")
+	fmt.Printf("\n全ての女性のユニコーンの中から、りんごかオレンジが好き、もしくは体重が 500ポンド未満の条件で検索します\n")
 	err = c.Find(
 		bson.M{"gender": "f",
 			"$or": []bson.M{
@@ -150,10 +153,10 @@ func ch01(c *mgo.Collection) error {
 }
 
 func ch02(c *mgo.Collection) error {
-	fmt.Println("Ch02")
+	fmt.Printf("\nCh02 ------------------------------------------------------------\n")
 
 	//
-	fmt.Println("Roooooodles の体重を少し増やしたい")
+	fmt.Println("Roooooodles の体重を少し増やしたい\n")
 	// before
 	if err := printUnicorn(c, "Roooooodles"); err != nil {
 		return err
@@ -168,7 +171,7 @@ func ch02(c *mgo.Collection) error {
 	}
 
 	//
-	fmt.Println("もしPilotがvampireを倒した数が間違っていて2つ多かった場合、以下のようにして間違いを修正します")
+	fmt.Printf("\nもしPilotがvampireを倒した数が間違っていて2つ多かった場合、以下のようにして間違いを修正します\n")
 	// before
 	if err := printUnicorn(c, "Pilot"); err != nil {
 		return err
@@ -183,7 +186,7 @@ func ch02(c *mgo.Collection) error {
 	}
 
 	//
-	fmt.Println("もし Aurora が突然甘党になったら")
+	fmt.Printf("\nもし Aurora が突然甘党になったら\n")
 	// before
 	if err := printUnicorn(c, "Aurora"); err != nil {
 		return err
@@ -197,7 +200,7 @@ func ch02(c *mgo.Collection) error {
 	}
 
 	//
-	fmt.Println("全てのかわいいユニコーン達が予防接種を受けた")
+	fmt.Printf("\n全てのかわいいユニコーン達が予防接種を受けた\n")
 
 	fmt.Println("before")
 	var unicorns []Unicorn
@@ -230,7 +233,7 @@ type Hits struct {
 
 func ch02Hits(s *mgo.Session) error {
 	//
-	fmt.Println("Webサイトのカウンター")
+	fmt.Printf("\nWebサイトのカウンター\n")
 	c := s.DB("test").C("hits")
 	// 1
 	if _, err := c.Upsert(bson.M{"page": "unicorns"}, bson.M{"$inc": bson.M{"hits": 1}}); err != nil {
@@ -254,9 +257,7 @@ func ch02Hits(s *mgo.Session) error {
 }
 
 func ch03(c *mgo.Collection) error {
-	fmt.Println("Ch03")
-
-	//
+	fmt.Printf("\nCh03 ------------------------------------------------------------\n")
 
 	//
 	fmt.Println("全てのユニコーンの名前を取得")
@@ -267,28 +268,28 @@ func ch03(c *mgo.Collection) error {
 	}
 
 	//
-	fmt.Println("昇順でソートを行いたい場合はフィールドと1を指")
+	fmt.Printf("\n昇順でソートを行いたい場合はフィールドと1指定\n")
 	var us []Unicorn
 	c.Find(nil).Sort("name").All(&us)
 	for _, u := range us {
 		fmt.Printf("%v\n", u.Name)
 	}
 
-	fmt.Println("降順で行いたい場合は–1を指定します")
+	fmt.Printf("\n降順で行いたい場合は–1を指定します\n")
 	c.Find(nil).Sort("-name").All(&us)
 	for _, u := range us {
 		fmt.Printf("%v\n", u.Name)
 	}
 
 	//
-	fmt.Println("ページング:2番目と3番目に重いユニコーンを得る")
+	fmt.Printf("\nページング:2番目と3番目に重いユニコーンを得る\n")
 	c.Find(nil).Sort("-weight").Limit(2).Skip(1).All(&us)
 	for _, u := range us {
 		fmt.Printf("%s(weight: %d)\n", u.Name, u.Weight)
 	}
 
 	//
-	fmt.Println("カウント")
+	fmt.Printf("\nカウント")
 	n, err := c.Find(bson.M{"vampires": bson.M{"$gt": 50}}).Count()
 	if err != nil {
 		return err
@@ -327,7 +328,7 @@ type EmployeeHasMultiManager struct {
 }
 
 func ch04(s *mgo.Session) error {
-	fmt.Printf("\nCh04\n")
+	fmt.Printf("\nCh04 ------------------------------------------------------------\n")
 
 	c := s.DB("test").C("employees")
 	if c == nil {
@@ -376,6 +377,12 @@ func ch04(s *mgo.Session) error {
 	for _, e := range es {
 		fmt.Printf("%v -> %v\n", miho.ID, e.Name)
 	}
+
+	return nil
+}
+
+func ch05(s *mgo.Session) error {
+	fmt.Printf("\nCh05 ------------------------------------------------------------\n")
 
 	return nil
 }
