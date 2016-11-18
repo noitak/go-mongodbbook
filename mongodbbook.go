@@ -92,7 +92,7 @@ func cleanupCollection(s *mgo.Session, collectionName string) error {
 	if c == nil {
 		return errors.New("can't create collection: " + collectionName)
 	}
-	_, err := c.RemoveAll(struct{}{})
+	_, err := c.RemoveAll(nil)
 	if err != nil {
 		return err
 	}
@@ -195,18 +195,18 @@ func ch02(c *mgo.Collection) error {
 
 	fmt.Println("before")
 	var unicorns []Unicorn
-	if err := c.Find(struct{}{}).All(&unicorns); err != nil {
+	if err := c.Find(nil).All(&unicorns); err != nil {
 		return err
 	}
 	for _, u := range unicorns {
 		fmt.Printf("%s\tvaccinated:%t\n", u.Name, u.Vaccinated)
 	}
 
-	if _, err := c.UpdateAll(struct{}{}, bson.M{"$set": bson.M{"vaccinated": true}}); err != nil {
+	if _, err := c.UpdateAll(nil, bson.M{"$set": bson.M{"vaccinated": true}}); err != nil {
 		return err
 	}
 	fmt.Println("after")
-	if err := c.Find(struct{}{}).All(&unicorns); err != nil {
+	if err := c.Find(nil).All(&unicorns); err != nil {
 		return err
 	}
 	for _, u := range unicorns {
@@ -263,13 +263,13 @@ func ch03(c *mgo.Collection) error {
 	//
 	fmt.Println("昇順でソートを行いたい場合はフィールドと1を指")
 	var us []Unicorn
-	c.Find(struct{}{}).Sort("name").All(&us)
+	c.Find(nil).Sort("name").All(&us)
 	for _, u := range us {
 		fmt.Printf("%v\n", u.Name)
 	}
 
 	fmt.Println("降順で行いたい場合は–1を指定します")
-	c.Find(struct{}{}).Sort("-name").All(&us)
+	c.Find(nil).Sort("-name").All(&us)
 	for _, u := range us {
 		fmt.Printf("%v\n", u.Name)
 	}
