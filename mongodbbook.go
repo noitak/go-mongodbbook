@@ -32,11 +32,17 @@ func main() {
 	if err := ch03(unicorn); err != nil {
 		panic(err)
 	}
+	if err := ch04(session); err != nil {
+		panic(err)
+	}
 	// Cleanup
 	if err := cleanupCollection(session, "unicorn"); err != nil {
 		panic(err)
 	}
 	if err := cleanupCollection(session, "hits"); err != nil {
+		panic(err)
+	}
+	if err := cleanupCollection(session, "employees"); err != nil {
 		panic(err)
 	}
 }
@@ -300,5 +306,76 @@ func printUnicorn(c *mgo.Collection, name string) error {
 		return err
 	}
 	fmt.Printf("%v\n", u)
+	return nil
+}
+
+type Employee struct {
+	ID   bson.ObjectId `bson:"_id,omitempty"`
+	Name string
+}
+
+type EmployeeHasManager struct {
+	ID      bson.ObjectId `bson:"_id,omitempty"`
+	Name    string
+	Manager bson.ObjectId
+}
+
+type EmployeeHasMultiManager struct {
+	ID       bson.ObjectId `bson:"_id,omitempty"`
+	Name     string
+	Managers []bson.ObjectId
+}
+
+func ch04(s *mgo.Session) error {
+	fmt.Printf("\nCh04\n")
+
+	c := s.DB("test").C("employees")
+	if c == nil {
+		return errors.New("Can't create employees collection")
+	}
+	if err := c.Insert(&Employee{Name: "Maho"}); err != nil {
+		return err
+	}
+	// MahoのID
+	var maho Employee
+	c.Find(bson.M{"name": "Maho"}).One(&maho)
+
+	if err := c.Insert(
+		&EmployeeHasManager{Name: "Miho", Manager: maho.ID},
+		&EmployeeHasManager{Name: "Erika", Manager: maho.ID}); err != nil {
+		return err
+	}
+
+	//
+	fmt.Printf("Mihoの社員を検索する\n")
+	var es []EmployeeHasManager
+	c.Find(bson.M{"manager": maho.ID}).All(&es)
+	for _, e := range es {
+		fmt.Printf("%s : manager=%s\n", e.Name, e.Manager)
+	}
+
+	//
+	fmt.Printf("\n社員が複数のマネージャーを持つ場合\n")
+	var miho Employee
+	c.Find(bson.M{"name": "Miho"}).One(&miho)
+
+	if err := c.Insert(&EmployeeHasMultiManager{Name: "Koume", Managers: []bson.ObjectId{maho.ID, miho.ID}}); err != nil {
+		return err
+	}
+	var ems []EmployeeHasMultiManager
+	c.Find(bson.M{"managers": miho.ID}).All(&ems)
+	for _, e := range ems {
+		fmt.Printf("%s : manager=%v\n", e.Name, e.Managers)
+	}
+
+	// familyの例は型が面倒なので割愛
+
+	//
+	fmt.Printf("\nDBRef\n")
+	s.FindRef(&mgo.DBRef{Collection: "employees", Id: miho.ID, Database: "test"}).All(&es)
+	for _, e := range es {
+		fmt.Printf("%v -> %v\n", miho.ID, e.Name)
+	}
+
 	return nil
 }
