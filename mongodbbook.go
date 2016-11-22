@@ -35,7 +35,10 @@ func main() {
 	if err := ch04(session); err != nil {
 		panic(err)
 	}
-	if err := ch05(session); err != nil {
+	//	if err := ch05(session); err != nil {
+	//		panic(err)
+	//	}
+	if err := ch07(unicorn); err != nil {
 		panic(err)
 	}
 	// Cleanup
@@ -381,8 +384,78 @@ func ch04(s *mgo.Session) error {
 	return nil
 }
 
+type Log struct {
+	ID       bson.ObjectId `bson:"_id,omitempty"`
+	Resource string
+	Date     time.Time
+}
+
+// todo: out of order
 func ch05(s *mgo.Session) error {
 	fmt.Printf("\nCh05 ------------------------------------------------------------\n")
 
+	c := s.DB("test").C("hits")
+	if c == nil {
+		return errors.New("Can't create collection hits")
+	}
+	if err := c.Insert(
+		&Log{Resource: "index", Date: time.Date(2010, 0, 20, 4, 30, 0, 0, time.Local)},
+		&Log{Resource: "index", Date: time.Date(2010, 0, 20, 5, 30, 0, 0, time.Local)},
+		&Log{Resource: "about", Date: time.Date(2010, 0, 20, 6, 0, 0, 0, time.Local)},
+		&Log{Resource: "index", Date: time.Date(2010, 0, 20, 7, 0, 0, 0, time.Local)},
+		&Log{Resource: "about", Date: time.Date(2010, 0, 21, 8, 0, 0, 0, time.Local)},
+		&Log{Resource: "about", Date: time.Date(2010, 0, 21, 8, 30, 0, 0, time.Local)},
+		&Log{Resource: "index", Date: time.Date(2010, 0, 21, 8, 30, 0, 0, time.Local)},
+		&Log{Resource: "about", Date: time.Date(2010, 0, 21, 9, 0, 0, 0, time.Local)},
+		&Log{Resource: "index", Date: time.Date(2010, 0, 21, 9, 30, 0, 0, time.Local)},
+		&Log{Resource: "index", Date: time.Date(2010, 0, 22, 5, 0, 0, 0, time.Local)}); err != nil {
+		return err
+	}
+	var mapFunc string = `
+var map = function() {
+    var key = {resource: this.resource,
+               year: this.date.getFullYear(),
+               month: this.date.getMonth(),
+               day: this.date.getDate()
+              };
+    emit(key, {count: 1});
+};
+`
+	var reduceFunc string = `
+var reduce = function(key, values) {
+    var sum = 0;
+    values.forEach(function(value) {
+        sum += value[’count’];
+});
+    return {count: sum};
+};
+`
+	var result []struct {
+		ID    int "_id"
+		Count int "count"
+	}
+	_, err := c.Find(nil).MapReduce(&mgo.MapReduce{Map: mapFunc, Reduce: reduceFunc}, &result)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ch07(c *mgo.Collection) error {
+	fmt.Printf("\nCh07 ------------------------------------------------------------\n")
+
+	//
+	fmt.Printf("インデックスはensureIndexを呼んで作成されます")
+	index := mgo.Index{
+		Key:        []string{"name"},
+		Unique:     true,
+		DropDups:   true,
+		Background: true,
+		Sparse:     true,
+	}
+	if err := c.EnsureIndex(index); err != nil {
+		return err
+	}
 	return nil
 }
